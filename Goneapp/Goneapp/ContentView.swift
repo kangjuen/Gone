@@ -24,7 +24,7 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             // Background
-            Color.black
+            Color.white
                 .ignoresSafeArea()
             
             // Stage-based View Switching
@@ -81,6 +81,7 @@ struct ContentView: View {
                 }
             }
         }
+        .preferredColorScheme(.light)
     }
 }
 
@@ -96,23 +97,23 @@ struct InputView: View {
             
             Text("걱정을 적어보세요")
                 .font(.title2)
-                .foregroundColor(.white)
+                .foregroundColor(.black)
             
             TextEditor(text: $worryText)
                 .frame(height: 200)
                 .padding()
                 .background(Color.gray.opacity(0.2))
                 .cornerRadius(12)
-                .foregroundColor(.white)
+                .foregroundColor(.black)
                 .scrollContentBackground(.hidden)
             
             Button(action: onComplete) {
                 Text("다 썼어")
                     .font(.headline)
-                    .foregroundColor(.black)
+                    .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.white)
+                    .background(Color.black)
                     .cornerRadius(12)
             }
             .padding(.horizontal, 40)
@@ -137,7 +138,7 @@ struct SelectionView: View {
             
             Text("어떻게 없앨까요?")
                 .font(.title2)
-                .foregroundColor(.white)
+                .foregroundColor(.black)
             
             VStack(spacing: 20) {
                 ForEach(methods, id: \.self) { method in
@@ -146,10 +147,10 @@ struct SelectionView: View {
                     }) {
                         Text(method)
                             .font(.headline)
-                            .foregroundColor(.black)
+                            .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(Color.white)
+                            .background(Color.black)
                             .cornerRadius(12)
                     }
                     .padding(.horizontal, 40)
@@ -174,11 +175,11 @@ struct DestructionView: View {
             
             Text("'\(worryText)'를")
                 .font(.title3)
-                .foregroundColor(.white)
+                .foregroundColor(.black)
             
             Text("[\(selectedMethod)]로 없애는 중...")
                 .font(.title3)
-                .foregroundColor(.white)
+                .foregroundColor(.black)
             
             // TODO: 여기에 나중에 SpriteKit 애니메이션이 들어갈 자리
             
@@ -208,7 +209,7 @@ struct GoneView: View {
             if showText {
                 Text("gone.")
                     .font(.largeTitle)
-                    .foregroundColor(.white)
+                    .foregroundColor(.black)
                     .transition(.opacity)
             }
             
@@ -216,10 +217,10 @@ struct GoneView: View {
                 Button(action: onReset) {
                     Text("다른 걱정 없애기")
                         .font(.headline)
-                        .foregroundColor(.black)
+                        .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.white)
+                        .background(Color.black)
                         .cornerRadius(12)
                 }
                 .padding(.horizontal, 40)
