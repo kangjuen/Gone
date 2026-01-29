@@ -91,6 +91,7 @@ struct InputView: View {
     @Binding var worryText: String
     @State private var showCompleteButton = false
     @State private var hasScheduledButtonAppearance = false
+    @State private var scheduledShowTask: DispatchWorkItem?
     
     let onComplete: () -> Void
     
@@ -176,13 +177,23 @@ struct InputView: View {
             }
             .padding()
         }
-        .onChange(of: worryText) { _, newValue in
+        .onChange(of: worryText) { newValue in
             let hasInput = !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            if hasInput, !hasScheduledButtonAppearance {
-                hasScheduledButtonAppearance = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
-                    showCompleteButton = true
+            if hasInput {
+                if !hasScheduledButtonAppearance {
+                    scheduledShowTask?.cancel()
+                    let workItem = DispatchWorkItem {
+                        showCompleteButton = true
+                    }
+                    scheduledShowTask = workItem
+                    hasScheduledButtonAppearance = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 4.0, execute: workItem)
                 }
+            } else {
+                scheduledShowTask?.cancel()
+                scheduledShowTask = nil
+                hasScheduledButtonAppearance = false
+                showCompleteButton = false
             }
         }
     }
