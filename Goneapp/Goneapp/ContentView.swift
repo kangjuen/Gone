@@ -117,6 +117,7 @@ struct InputView: View {
                         .foregroundColor(.black)
                         .font(.system(size: worryInputFontSize))
                         .multilineTextAlignment(.center)
+                        .tint(.black)
                     
                     if worryText.isEmpty {
                         Text("걱정을 써보세요")
