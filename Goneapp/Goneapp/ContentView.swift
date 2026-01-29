@@ -81,7 +81,6 @@ struct ContentView: View {
                 }
             }
         }
-        .preferredColorScheme(.light)
     }
 }
 
@@ -92,45 +91,66 @@ struct InputView: View {
     let onComplete: () -> Void
     
     var body: some View {
-        VStack(spacing: 30) {
-            Spacer()
+        ZStack {
+            // 구겨진 종이 배경
+            Image("PaperBackground")
+                .resizable()
+                .scaledToFill()
+                .ignoresSafeArea()
             
-            Text("걱정을 적어보세요")
-                .font(.title2)
-                .foregroundColor(.black)
-            
-            TextEditor(text: $worryText)
-                .frame(height: 200)
-                .padding()
-                .background(Color.gray.opacity(0.2))
-                .cornerRadius(12)
-                .foregroundColor(.black)
-                .scrollContentBackground(.hidden)
-            
-            Button(action: onComplete) {
-                Text("다 썼어")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.black)
-                    .cornerRadius(12)
+            VStack(spacing: 30) {
+                Spacer()
+                
+                // 인풋 영역: 필드는 안 보이게, placeholder만 권유 멘트
+                ZStack(alignment: .topLeading) {
+                    TextEditor(text: $worryText)
+                        .frame(height: 200)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .scrollContentBackground(.hidden)
+                        .background(Color.clear)
+                        .foregroundColor(.black)
+                    
+                    if worryText.isEmpty {
+                        Text("걱정을 써보세요")
+                            .foregroundColor(.black.opacity(0.4))
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 20)
+                            .allowsHitTesting(false)
+                    }
+                }
+                .padding(.horizontal, 24)
+                
+                Button(action: onComplete) {
+                    Text("다 썼어")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.black)
+                        .cornerRadius(12)
+                }
+                .padding(.horizontal, 40)
+                
+                Spacer()
             }
-            .padding(.horizontal, 40)
-            
-            Spacer()
+            .padding()
         }
-        .padding()
     }
 }
 
-// MARK: - Selection View
+// MARK: - Selection View (2x2 그리드 + 리퀴드/비눗방울 스타일)
 struct SelectionView: View {
     @Binding var selectedMethod: String?
     
     let onSelect: (String) -> Void
     
     let methods = ["파쇄", "태우기", "물에 띄우기", "바람에 날리기"]
+    
+    private let columns = [
+        GridItem(.flexible(), spacing: 16),
+        GridItem(.flexible(), spacing: 16)
+    ]
     
     var body: some View {
         VStack(spacing: 30) {
@@ -140,22 +160,52 @@ struct SelectionView: View {
                 .font(.title2)
                 .foregroundColor(.black)
             
-            VStack(spacing: 20) {
+            LazyVGrid(columns: columns, spacing: 16) {
                 ForEach(methods, id: \.self) { method in
                     Button(action: {
                         onSelect(method)
                     }) {
                         Text(method)
                             .font(.headline)
-                            .foregroundColor(.white)
+                            .foregroundColor(.black)
                             .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.black)
-                            .cornerRadius(12)
+                            .frame(height: 100)
+                            .background(
+                                ZStack {
+                                    // 비눗방울/리퀴드: 반투명 유리 + 상단 하이라이트
+                                    RoundedRectangle(cornerRadius: 24)
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [
+                                                    .white.opacity(0.7),
+                                                    .white.opacity(0.25)
+                                                ],
+                                                startPoint: .top,
+                                                endPoint: .bottom
+                                            )
+                                        )
+                                    RoundedRectangle(cornerRadius: 24)
+                                        .fill(.ultraThinMaterial)
+                                    RoundedRectangle(cornerRadius: 24)
+                                        .stroke(
+                                            LinearGradient(
+                                                colors: [
+                                                    .white.opacity(0.9),
+                                                    .white.opacity(0.4)
+                                                ],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            ),
+                                            lineWidth: 1.5
+                                        )
+                                }
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 24))
                     }
-                    .padding(.horizontal, 40)
+                    .buttonStyle(.plain)
                 }
             }
+            .padding(.horizontal, 24)
             
             Spacer()
         }
