@@ -24,7 +24,7 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             // Background
-            Color.black
+            Color.white
                 .ignoresSafeArea()
             
             // Stage-based View Switching
@@ -86,44 +86,109 @@ struct ContentView: View {
 
 // MARK: - Input View
 struct InputView: View {
+    private let worryInputFontSize: CGFloat = 24 // 1.5rem (24px, 16px = 1rem 기준) — 임팩트 있는 가독
+    
     @Binding var worryText: String
+    @State private var showCompleteButton = false
+    @State private var hasScheduledButtonAppearance = false
     
     let onComplete: () -> Void
     
     var body: some View {
-        VStack(spacing: 30) {
-            Spacer()
+        ZStack {
+            // 구겨진 종이 배경
+            Image("PaperBackground")
+                .resizable()
+                .scaledToFill()
+                .ignoresSafeArea()
             
-            Text("걱정을 적어보세요")
-                .font(.title2)
-                .foregroundColor(.white)
-            
-            TextEditor(text: $worryText)
-                .frame(height: 200)
-                .padding()
-                .background(Color.gray.opacity(0.2))
-                .cornerRadius(12)
-                .foregroundColor(.white)
-                .scrollContentBackground(.hidden)
-            
-            Button(action: onComplete) {
-                Text("다 썼어")
-                    .font(.headline)
-                    .foregroundColor(.black)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.white)
-                    .cornerRadius(12)
+            VStack(spacing: 30) {
+                Spacer()
+                
+                // 인풋 영역: 필드는 안 보이게, placeholder만 권유 멘트
+                ZStack(alignment: .top) {
+                    TextEditor(text: $worryText)
+                        .frame(height: 200)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .scrollContentBackground(.hidden)
+                        .background(Color.clear)
+                        .foregroundColor(.black)
+                        .font(.system(size: worryInputFontSize))
+                        .multilineTextAlignment(.center)
+                    
+                    if worryText.isEmpty {
+                        Text("걱정을 써보세요")
+                            .font(.system(size: worryInputFontSize))
+                            .foregroundColor(.black.opacity(0.4))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 20)
+                            .allowsHitTesting(false)
+                    }
+                }
+                .padding(.horizontal, 24)
+                
+                Button(action: onComplete) {
+                    Text("다 썼어")
+                        .font(.headline)
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [
+                                                .white.opacity(0.7),
+                                                .white.opacity(0.25)
+                                            ],
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        )
+                                    )
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(.ultraThinMaterial)
+                                RoundedRectangle(cornerRadius: 20)
+                                    .stroke(
+                                        LinearGradient(
+                                            colors: [
+                                                .white.opacity(0.9),
+                                                .white.opacity(0.4)
+                                            ],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        ),
+                                        lineWidth: 1.5
+                                    )
+                            }
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 40)
+                .opacity(showCompleteButton ? 1 : 0)
+                .offset(y: showCompleteButton ? 0 : 12)
+                .allowsHitTesting(showCompleteButton)
+                .animation(.easeOut(duration: 0.5), value: showCompleteButton)
+                
+                Spacer()
             }
-            .padding(.horizontal, 40)
-            
-            Spacer()
+            .padding()
         }
-        .padding()
+        .onChange(of: worryText) { _, newValue in
+            let hasInput = !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            if hasInput, !hasScheduledButtonAppearance {
+                hasScheduledButtonAppearance = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+                    showCompleteButton = true
+                }
+            }
+        }
     }
 }
 
-// MARK: - Selection View
+// MARK: - Selection View (2x2 그리드 + 리퀴드/비눗방울 스타일)
 struct SelectionView: View {
     @Binding var selectedMethod: String?
     
@@ -131,15 +196,20 @@ struct SelectionView: View {
     
     let methods = ["파쇄", "태우기", "물에 띄우기", "바람에 날리기"]
     
+    private let columns = [
+        GridItem(.flexible(), spacing: 16),
+        GridItem(.flexible(), spacing: 16)
+    ]
+    
     var body: some View {
         VStack(spacing: 30) {
             Spacer()
             
             Text("어떻게 없앨까요?")
                 .font(.title2)
-                .foregroundColor(.white)
+                .foregroundColor(.black)
             
-            VStack(spacing: 20) {
+            LazyVGrid(columns: columns, spacing: 16) {
                 ForEach(methods, id: \.self) { method in
                     Button(action: {
                         onSelect(method)
@@ -148,13 +218,43 @@ struct SelectionView: View {
                             .font(.headline)
                             .foregroundColor(.black)
                             .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.white)
-                            .cornerRadius(12)
+                            .frame(height: 100)
+                            .background(
+                                ZStack {
+                                    // 비눗방울/리퀴드: 반투명 유리 + 상단 하이라이트
+                                    RoundedRectangle(cornerRadius: 24)
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [
+                                                    .white.opacity(0.7),
+                                                    .white.opacity(0.25)
+                                                ],
+                                                startPoint: .top,
+                                                endPoint: .bottom
+                                            )
+                                        )
+                                    RoundedRectangle(cornerRadius: 24)
+                                        .fill(.ultraThinMaterial)
+                                    RoundedRectangle(cornerRadius: 24)
+                                        .stroke(
+                                            LinearGradient(
+                                                colors: [
+                                                    .white.opacity(0.9),
+                                                    .white.opacity(0.4)
+                                                ],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            ),
+                                            lineWidth: 1.5
+                                        )
+                                }
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 24))
                     }
-                    .padding(.horizontal, 40)
+                    .buttonStyle(.plain)
                 }
             }
+            .padding(.horizontal, 24)
             
             Spacer()
         }
@@ -174,11 +274,11 @@ struct DestructionView: View {
             
             Text("'\(worryText)'를")
                 .font(.title3)
-                .foregroundColor(.white)
+                .foregroundColor(.black)
             
             Text("[\(selectedMethod)]로 없애는 중...")
                 .font(.title3)
-                .foregroundColor(.white)
+                .foregroundColor(.black)
             
             // TODO: 여기에 나중에 SpriteKit 애니메이션이 들어갈 자리
             
@@ -208,7 +308,7 @@ struct GoneView: View {
             if showText {
                 Text("gone.")
                     .font(.largeTitle)
-                    .foregroundColor(.white)
+                    .foregroundColor(.black)
                     .transition(.opacity)
             }
             
@@ -219,9 +319,38 @@ struct GoneView: View {
                         .foregroundColor(.black)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.white)
-                        .cornerRadius(12)
+                        .background(
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [
+                                                .white.opacity(0.7),
+                                                .white.opacity(0.25)
+                                            ],
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        )
+                                    )
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(.ultraThinMaterial)
+                                RoundedRectangle(cornerRadius: 20)
+                                    .stroke(
+                                        LinearGradient(
+                                            colors: [
+                                                .white.opacity(0.9),
+                                                .white.opacity(0.4)
+                                            ],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        ),
+                                        lineWidth: 1.5
+                                    )
+                            }
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
                 }
+                .buttonStyle(.plain)
                 .padding(.horizontal, 40)
                 .transition(.opacity)
             }
