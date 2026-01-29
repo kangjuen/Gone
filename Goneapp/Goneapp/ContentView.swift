@@ -86,7 +86,11 @@ struct ContentView: View {
 
 // MARK: - Input View
 struct InputView: View {
+    private let worryInputFontSize: CGFloat = 24 // 1.5rem (24px, 16px = 1rem 기준) — 임팩트 있는 가독
+    
     @Binding var worryText: String
+    @State private var showCompleteButton = false
+    @State private var hasScheduledButtonAppearance = false
     
     let onComplete: () -> Void
     
@@ -102,7 +106,7 @@ struct InputView: View {
                 Spacer()
                 
                 // 인풋 영역: 필드는 안 보이게, placeholder만 권유 멘트
-                ZStack(alignment: .topLeading) {
+                ZStack(alignment: .top) {
                     TextEditor(text: $worryText)
                         .frame(height: 200)
                         .padding(.horizontal, 16)
@@ -110,11 +114,14 @@ struct InputView: View {
                         .scrollContentBackground(.hidden)
                         .background(Color.clear)
                         .foregroundColor(.black)
+                        .font(.system(size: worryInputFontSize))
+                        .multilineTextAlignment(.center)
                     
                     if worryText.isEmpty {
                         Text("걱정을 써보세요")
+                            .font(.system(size: worryInputFontSize))
                             .foregroundColor(.black.opacity(0.4))
-                            .padding(.horizontal, 20)
+                            .frame(maxWidth: .infinity)
                             .padding(.vertical, 20)
                             .allowsHitTesting(false)
                     }
@@ -124,17 +131,59 @@ struct InputView: View {
                 Button(action: onComplete) {
                     Text("다 썼어")
                         .font(.headline)
-                        .foregroundColor(.white)
+                        .foregroundColor(.black)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.black)
-                        .cornerRadius(12)
+                        .background(
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [
+                                                .white.opacity(0.7),
+                                                .white.opacity(0.25)
+                                            ],
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        )
+                                    )
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(.ultraThinMaterial)
+                                RoundedRectangle(cornerRadius: 20)
+                                    .stroke(
+                                        LinearGradient(
+                                            colors: [
+                                                .white.opacity(0.9),
+                                                .white.opacity(0.4)
+                                            ],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        ),
+                                        lineWidth: 1.5
+                                    )
+                            }
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
                 }
+                .buttonStyle(.plain)
                 .padding(.horizontal, 40)
+                .opacity(showCompleteButton ? 1 : 0)
+                .offset(y: showCompleteButton ? 0 : 12)
+                .allowsHitTesting(showCompleteButton)
+                .animation(.easeOut(duration: 0.5), value: showCompleteButton)
                 
                 Spacer()
             }
             .padding()
+        }
+        .onChange(of: worryText) { _, newValue in
+            let hasInput = !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            if hasInput, !hasScheduledButtonAppearance {
+                hasScheduledButtonAppearance = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+                    showCompleteButton = true
+                }
+            }
         }
     }
 }
@@ -267,12 +316,41 @@ struct GoneView: View {
                 Button(action: onReset) {
                     Text("다른 걱정 없애기")
                         .font(.headline)
-                        .foregroundColor(.white)
+                        .foregroundColor(.black)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.black)
-                        .cornerRadius(12)
+                        .background(
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [
+                                                .white.opacity(0.7),
+                                                .white.opacity(0.25)
+                                            ],
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        )
+                                    )
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(.ultraThinMaterial)
+                                RoundedRectangle(cornerRadius: 20)
+                                    .stroke(
+                                        LinearGradient(
+                                            colors: [
+                                                .white.opacity(0.9),
+                                                .white.opacity(0.4)
+                                            ],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        ),
+                                        lineWidth: 1.5
+                                    )
+                            }
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
                 }
+                .buttonStyle(.plain)
                 .padding(.horizontal, 40)
                 .transition(.opacity)
             }
