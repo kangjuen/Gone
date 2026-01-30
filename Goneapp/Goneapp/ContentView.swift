@@ -6,6 +6,39 @@
 //
 
 import SwiftUI
+import AVFoundation
+
+// MARK: - Sound Manager
+final class SoundManager {
+    static let shared = SoundManager()
+    private var audioPlayer: AVAudioPlayer?
+
+    private init() {}
+
+    func playSound(named name: String) {
+        let extensions = ["mp3", "wav"]
+
+        var url: URL?
+        for ext in extensions {
+            if let foundURL = Bundle.main.url(forResource: name, withExtension: ext) {
+                url = foundURL
+                break
+            }
+        }
+
+        guard let soundURL = url else {
+            print("[SoundManager] Error: Sound file '\(name)' not found in bundle.")
+            return
+        }
+
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
+            audioPlayer?.play()
+        } catch {
+            print("[SoundManager] Error: Failed to play sound - \(error.localizedDescription)")
+        }
+    }
+}
 
 // MARK: - App Stage Enum
 enum AppStage {
@@ -34,14 +67,9 @@ struct ContentView: View {
                     InputView(
                         worryText: $worryText,
                         onComplete: {
-                            if !worryText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    currentStage = .selection
-                                }
-                            }
+                            currentStage = .selection
                         }
                     )
-                    .transition(.opacity)
                     
                 case .selection:
                     SelectionView(
@@ -86,103 +114,137 @@ struct ContentView: View {
 
 // MARK: - Input View
 struct InputView: View {
-    private let worryInputFontSize: CGFloat = 24 // 1.5rem (24px, 16px = 1rem 기준) — 임팩트 있는 가독
-    
+    private let worryInputFontSize: CGFloat = 24
+
     @Binding var worryText: String
     @State private var showCompleteButton = false
     @State private var hasScheduledButtonAppearance = false
-    
+    @State private var scheduledShowTask: DispatchWorkItem?
+    @State private var slideOffset: CGFloat = 0
+    @State private var fadeOpacity: Double = 1.0
+
     let onComplete: () -> Void
-    
+
     var body: some View {
-        ZStack {
-            // 구겨진 종이 배경
-            Image("PaperBackground")
-                .resizable()
-                .scaledToFill()
-                .ignoresSafeArea()
-            
-            VStack(spacing: 30) {
-                Spacer()
-                
-                // 인풋 영역: 필드는 안 보이게, placeholder만 권유 멘트
-                ZStack(alignment: .top) {
-                    TextEditor(text: $worryText)
-                        .frame(height: 200)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .scrollContentBackground(.hidden)
-                        .background(Color.clear)
-                        .foregroundColor(.black)
-                        .font(.system(size: worryInputFontSize))
-                        .multilineTextAlignment(.center)
-                    
-                    if worryText.isEmpty {
-                        Text("걱정을 써보세요")
+        GeometryReader { geometry in
+            ZStack {
+                // 구겨진 종이 배경
+                Image("PaperBackground")
+                    .resizable()
+                    .scaledToFill()
+                    .ignoresSafeArea()
+
+                VStack(spacing: 30) {
+                    Spacer()
+
+                    // 인풋 영역: 필드는 안 보이게, placeholder만 권유 멘트
+                    ZStack(alignment: .top) {
+                        TextEditor(text: $worryText)
+                            .frame(height: 200)
+                            .padding(.vertical, 12)
+                            .padding(.horizontal, 24)
+                            .scrollContentBackground(.hidden)
+                            .background(Color.clear)
+                            .foregroundColor(.black)
                             .font(.system(size: worryInputFontSize))
-                            .foregroundColor(.black.opacity(0.4))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 20)
-                            .allowsHitTesting(false)
+                            .multilineTextAlignment(.center)
+                            .tint(.black)
+
+                        if worryText.isEmpty {
+                            Text("걱정을 써보세요")
+                                .font(.system(size: worryInputFontSize))
+                                .foregroundColor(.black.opacity(0.4))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 24)
+                                .allowsHitTesting(false)
+                        }
                     }
-                }
-                .padding(.horizontal, 24)
-                
-                Button(action: onComplete) {
-                    Text("다 썼어")
-                        .font(.headline)
-                        .foregroundColor(.black)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 20)
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [
-                                                .white.opacity(0.7),
-                                                .white.opacity(0.25)
-                                            ],
-                                            startPoint: .top,
-                                            endPoint: .bottom
+
+                    Button(action: {
+                        guard !worryText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+
+                        // 사운드 재생
+                        SoundManager.shared.playSound(named: "slide_down")
+
+                        // 슬라이드 다운 + 페이드아웃 애니메이션 동시 시작
+                        withAnimation(.easeIn(duration: 0.2)) {
+                            slideOffset = geometry.size.height * 0.08
+                            fadeOpacity = 0
+                        }
+
+                        // 애니메이션 완료 후 화면 전환
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            onComplete()
+                        }
+                    }) {
+                        Text("다 썼어")
+                            .font(.headline)
+                            .foregroundColor(.black)
+                            .padding(.vertical, 16)
+                            .padding(.horizontal, 32)
+                            .background(
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [
+                                                    .white.opacity(0.7),
+                                                    .white.opacity(0.25)
+                                                ],
+                                                startPoint: .top,
+                                                endPoint: .bottom
+                                            )
                                         )
-                                    )
-                                RoundedRectangle(cornerRadius: 20)
-                                    .fill(.ultraThinMaterial)
-                                RoundedRectangle(cornerRadius: 20)
-                                    .stroke(
-                                        LinearGradient(
-                                            colors: [
-                                                .white.opacity(0.9),
-                                                .white.opacity(0.4)
-                                            ],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        ),
-                                        lineWidth: 1.5
-                                    )
-                            }
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .fill(.ultraThinMaterial)
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .stroke(
+                                            LinearGradient(
+                                                colors: [
+                                                    .white.opacity(0.9),
+                                                    .white.opacity(0.4)
+                                                ],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            ),
+                                            lineWidth: 1.5
+                                        )
+                                }
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 20))
+                    }
+                    .buttonStyle(.plain)
+                    .frame(maxWidth: .infinity)
+                    .opacity(showCompleteButton ? 1 : 0)
+                    .offset(y: showCompleteButton ? 0 : 12)
+                    .allowsHitTesting(showCompleteButton)
+                    .animation(.easeOut(duration: 0.5), value: showCompleteButton)
+
+                    Spacer()
                 }
-                .buttonStyle(.plain)
-                .padding(.horizontal, 40)
-                .opacity(showCompleteButton ? 1 : 0)
-                .offset(y: showCompleteButton ? 0 : 12)
-                .allowsHitTesting(showCompleteButton)
-                .animation(.easeOut(duration: 0.5), value: showCompleteButton)
-                
-                Spacer()
+                .padding(.horizontal, 20)
             }
-            .padding()
+            .frame(width: geometry.size.width, height: geometry.size.height)
+            .offset(y: slideOffset)
+            .opacity(fadeOpacity)
         }
-        .onChange(of: worryText) { _, newValue in
+        .onChange(of: worryText) { newValue in
             let hasInput = !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            if hasInput, !hasScheduledButtonAppearance {
-                hasScheduledButtonAppearance = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
-                    showCompleteButton = true
+            if hasInput {
+                if !hasScheduledButtonAppearance {
+                    scheduledShowTask?.cancel()
+                    let workItem = DispatchWorkItem {
+                        showCompleteButton = true
+                    }
+                    scheduledShowTask = workItem
+                    hasScheduledButtonAppearance = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 4.0, execute: workItem)
                 }
+            } else {
+                scheduledShowTask?.cancel()
+                scheduledShowTask = nil
+                hasScheduledButtonAppearance = false
+                showCompleteButton = false
             }
         }
     }
@@ -254,11 +316,10 @@ struct SelectionView: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 24)
-            
+
             Spacer()
         }
-        .padding()
+        .padding(.horizontal, 20)
     }
 }
 
@@ -280,11 +341,10 @@ struct DestructionView: View {
                 .font(.title3)
                 .foregroundColor(.black)
             
-            // TODO: 여기에 나중에 SpriteKit 애니메이션이 들어갈 자리
-            
+
             Spacer()
         }
-        .padding()
+        .padding(.horizontal, 20)
         .onAppear {
             // 3초 후 자동으로 .gone 단계로 전환
             DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
@@ -351,13 +411,12 @@ struct GoneView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 20))
                 }
                 .buttonStyle(.plain)
-                .padding(.horizontal, 40)
                 .transition(.opacity)
             }
-            
+
             Spacer()
         }
-        .padding()
+        .padding(.horizontal, 20)
         .onAppear {
             // 텍스트 페이드 인
             withAnimation(.easeIn(duration: 0.5)) {
