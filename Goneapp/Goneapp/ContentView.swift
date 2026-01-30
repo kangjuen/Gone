@@ -6,6 +6,40 @@
 //
 
 import SwiftUI
+import AVFoundation
+
+// MARK: - Sound Manager
+final class SoundManager {
+    static let shared = SoundManager()
+    private var audioPlayer: AVAudioPlayer?
+
+    private init() {}
+
+    func playSound(named name: String) {
+        // mp3, wav 순서로 파일 탐색
+        let extensions = ["mp3", "wav"]
+
+        var url: URL?
+        for ext in extensions {
+            if let foundURL = Bundle.main.url(forResource: name, withExtension: ext) {
+                url = foundURL
+                break
+            }
+        }
+
+        guard let soundURL = url else {
+            print("[SoundManager] Error: Sound file '\(name)' not found in bundle.")
+            return
+        }
+
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
+            audioPlayer?.play()
+        } catch {
+            print("[SoundManager] Error: Failed to play sound - \(error.localizedDescription)")
+        }
+    }
+}
 
 // MARK: - App Stage Enum
 enum AppStage {
@@ -128,6 +162,9 @@ struct InputView: View {
 
                     Button(action: {
                         guard !worryText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+
+                        // 사운드 재생
+                        SoundManager.shared.playSound(named: "slide_down")
 
                         // 슬라이드 다운 + 페이드아웃 애니메이션 동시 시작
                         withAnimation(.easeIn(duration: 0.2)) {
