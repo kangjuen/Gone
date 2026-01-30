@@ -16,7 +16,6 @@ final class SoundManager {
     private init() {}
 
     func playSound(named name: String) {
-        // mp3, wav 순서로 파일 탐색
         let extensions = ["mp3", "wav"]
 
         var url: URL?
@@ -143,6 +142,7 @@ struct InputView: View {
                         TextEditor(text: $worryText)
                             .frame(height: 200)
                             .padding(.vertical, 12)
+                            .padding(.horizontal, 24)
                             .scrollContentBackground(.hidden)
                             .background(Color.clear)
                             .foregroundColor(.black)
@@ -155,7 +155,7 @@ struct InputView: View {
                                 .font(.system(size: worryInputFontSize))
                                 .foregroundColor(.black.opacity(0.4))
                                 .frame(maxWidth: .infinity)
-                                .padding(.vertical, 20)
+                                .padding(.vertical, 24)
                                 .allowsHitTesting(false)
                         }
                     }
@@ -180,8 +180,8 @@ struct InputView: View {
                         Text("다 썼어")
                             .font(.headline)
                             .foregroundColor(.black)
-                            .frame(maxWidth: .infinity)
-                            .padding()
+                            .padding(.vertical, 16)
+                            .padding(.horizontal, 32)
                             .background(
                                 ZStack {
                                     RoundedRectangle(cornerRadius: 20)
@@ -214,7 +214,7 @@ struct InputView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 20))
                     }
                     .buttonStyle(.plain)
-                    .padding(.horizontal, 40)
+                    .frame(maxWidth: .infinity)
                     .opacity(showCompleteButton ? 1 : 0)
                     .offset(y: showCompleteButton ? 0 : 12)
                     .allowsHitTesting(showCompleteButton)
@@ -222,7 +222,7 @@ struct InputView: View {
 
                     Spacer()
                 }
-                .padding()
+                .padding(.horizontal, 20)
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
             .offset(y: slideOffset)
@@ -316,11 +316,10 @@ struct SelectionView: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 24)
-            
+
             Spacer()
         }
-        .padding()
+        .padding(.horizontal, 20)
     }
 }
 
@@ -342,11 +341,10 @@ struct DestructionView: View {
                 .font(.title3)
                 .foregroundColor(.black)
             
-            // TODO: 여기에 나중에 SpriteKit 애니메이션이 들어갈 자리
-            
+
             Spacer()
         }
-        .padding()
+        .padding(.horizontal, 20)
         .onAppear {
             // 3초 후 자동으로 .gone 단계로 전환
             DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
@@ -413,13 +411,12 @@ struct GoneView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 20))
                 }
                 .buttonStyle(.plain)
-                .padding(.horizontal, 40)
                 .transition(.opacity)
             }
-            
+
             Spacer()
         }
-        .padding()
+        .padding(.horizontal, 20)
         .onAppear {
             // 텍스트 페이드 인
             withAnimation(.easeIn(duration: 0.5)) {
